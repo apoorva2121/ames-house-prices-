@@ -1,0 +1,47 @@
+# House Prices — pipeline configuration.
+# Every tunable lives here so runs are reproducible from the config alone.
+
+paths:
+  train: data/train.csv
+  test: data/test.csv            # Kaggle test.csv (optional; predict.py needs it)
+  artifacts: artifacts
+  reports: reports
+
+target: SalePrice
+id_column: Id
+
+cv:
+  n_splits: 5
+  n_repeats: 3
+  random_state: 42
+
+preprocessing:
+  # Two well-known Ames outliers: >4000 sqft living area sold far below market.
+  drop_outliers:
+    column: GrLivArea
+    threshold: 4000
+    price_below: 300000
+  skew_threshold: 0.75          # |skew| above this -> log1p on the numeric column
+
+models:
+  # Linear family on the one-hot, scaled design matrix.
+  lasso:      {alpha: 0.0005, max_iter: 50000}
+  elasticnet: {alpha: 0.0005, l1_ratio: 0.9, max_iter: 50000}
+  ridge:      {alpha: 10.0}
+  svr:        {C: 20, epsilon: 0.008, gamma: 0.0003}
+  gbr:        {n_estimators: 3000, learning_rate: 0.02, max_depth: 4, max_features: sqrt,
+               min_samples_leaf: 15, min_samples_split: 10, loss: huber, subsample: 0.8}
+  lightgbm:   {n_estimators: 3000, learning_rate: 0.01, num_leaves: 6, max_bin: 200,
+               bagging_fraction: 0.8, bagging_freq: 4, feature_fraction: 0.2,
+               min_data_in_leaf: 6, min_sum_hessian_in_leaf: 11, verbose: -1}
+  xgboost:    {n_estimators: 3000, learning_rate: 0.01, max_depth: 3, min_child_weight: 0,
+               gamma: 0, subsample: 0.7, colsample_bytree: 0.7, reg_alpha: 0.0006,
+               reg_lambda: 1.0, verbosity: 0}
+  catboost:   {iterations: 3000, learning_rate: 0.03, depth: 6, l2_leaf_reg: 3,
+               verbose: 0, allow_writing_files: false}
+
+blend:
+  # Weights are optimised on out-of-fold predictions (non-negative, sum to 1)
+  # unless `fixed` is provided.
+  optimise: true
+  fixed: null

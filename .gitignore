@@ -1,0 +1,8 @@
+artifacts/
+reports/oof_predictions.csv
+data/test.csv
+submission.csv
+__pycache__/
+*.pyc
+.pytest_cache/
+catboost_info/
